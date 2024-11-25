@@ -16,3 +16,6 @@ def main():
 
     data = fi.read()
     fi.close()
+
+if __name__ == "__main__":
+    main()
