@@ -11,4 +11,4 @@ Student Info
 
 * Student Name: Le Anh Quang
 * Student ID: 22BI13380
-* Student Group ID: Not-for-now
+* Student Group ID: 7
