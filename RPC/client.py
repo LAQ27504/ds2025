@@ -38,7 +38,7 @@ def list(argument):
 
 
 if __name__ == "__main__":
-    host = ""
+    host = "192.168.127.103"
     port = 8080
 
     server = xmlrpc.client.ServerProxy(f"http://{host}:{port}/", allow_none=True)
@@ -60,7 +60,6 @@ if __name__ == "__main__":
 
             argument = [server] + argument
 
-            print(argument)
             if operation == "QUIT":
                 break
 

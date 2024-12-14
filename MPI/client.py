@@ -1,97 +1,92 @@
 from mpi4py import MPI
+import os
 
-# Specify the service name used by the server
-service_name = "my_service_name"
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
 
-try:
-    # Look up the service's port using its published name
-    port = MPI.Lookup_name(service_name=service_name)
-    print(f"Found service '{service_name}' at port '{port}'.")
+def upload(argument):
+    contents = argument[0]
+    filename = argument[1]
 
-    # Connect to the service
-    client = MPI.COMM_WORLD.Connect(port)
-    print("Connected to the server.")
+    if not os.path.exists(f"MPI/Client/{filename}"):
+        return "File does not exist"
 
-    # Example communication (e.g., send and receive data)
-    client.send("Hello from client!")
-    response = client.recv()
-    print(f"Received from server: {response}")
+    with open(f"MPI/Client/{filename}", "rb") as file:
+        content = file.read()
 
-    # Disconnect from the server
-    client.Disconnect()
-    print("Disconnected from the server.")
-except Exception as e:
-    print(f"Error: {e}")
+    contents["argument"] = [content, filename]
 
+    comm.send(contents, dest=0)
 
-# def upload(argument):
-#     server = argument[0]
-#     filename = argument[1]
-
-#     if not os.path.exists(filename):
-#         return "File does not exist"
-
-#     with open(filename, "rb") as file:
-#         content = file.read()
-
-#     response = server.upload(filename, content)
-
-#     return response
+    response = comm.recv(source=0)
+    
+    return response
 
 
-# def download(argument):
-#     server = argument[0]
-#     filename = argument[1]
-#     content = server.download(filename)
+def download(argument):
+    contents = argument[0]
+    filename = argument[1]
 
-#     if not content:
-#         return "File not found"
-#     else:
-#         with open(filename, "wb") as f:
-#             f.write(content.data)
-#         return f"File {filename} downloaded successfully."
+    contents['argument'] = filename
+
+    comm.send(contents, dest=0)
+
+    content = comm.recv(source=0)
+
+    if not content:
+        return "File not found"
+    else:
+        with open(f"MPI/Client/{filename}", "wb") as f:
+            f.write(content)
+        return f"File {filename} downloaded successfully."
 
 
-# def list(argument):
-#     server = argument[0]
-#     files = server.list()
-#     return files
+def list(argument):
+    contents = argument[0]
+    comm.send(contents, dest=0)
+
+    return comm.recv(source=0)
 
 
-# if __name__ == "__main__":
-#     host = ""
-#     port = 8080
 
-#     server = xmlrpc.client.ServerProxy(f"http://{host}:{port}/", allow_none=True)
-#     options = {
-#         "UPLOAD": upload,
-#         "DOWNLOAD": download,
-#         "LIST": list,
-#     }
-#     while True:
-#         try:
-#             userInput = (
-#                 input("Enter operation (UPLOAD <file_name>, DOWNLOAD <file_name>, LIST) or QUIT to exit: ").strip()
-#             )
-#             userInput = userInput.split(" ")
-#             while userInput.count(" "): 
-#                 userInput.remove(" ")
-#             operation = userInput[0].upper()
-#             argument = userInput[-1 : ]
+if __name__ == "__main__":
+    if rank != 0: 
+        print("hello")
+        options = {
+            "UPLOAD": upload,
+            "DOWNLOAD": download,
+            "LIST": list,
+        }
+        while True:
+            try:
+                userInput = (
+                    input(f"[Client {rank}]: Enter operation (UPLOAD <file_name>, DOWNLOAD <file_name>, LIST) or QUIT to exit: ").strip()
+                )
+                userInput = userInput.split(" ")
+                while userInput.count(" "): 
+                    userInput.remove(" ")
+                operation = userInput[0].upper()
+                argument = userInput[-1 : ]
 
-#             argument = [server] + argument
+                contents = {
+                    "operation" : operation,
+                    "argument" : '',
+                    "rank" : rank,
+                }
 
-#             print(argument)
-#             if operation == "QUIT":
-#                 break
+                argument = [contents] + argument
 
-#             if operation not in options:
-#                 print("Invalid operation")
-#                 continue
-#             else:
-#                 response = options[operation](argument)
-#                 print("Response from server:", response)
+                if operation == "QUIT":
+                    comm.send(argument,dest=0)
+                    break
 
-#         except Exception as e:
-#             print(f"Error: {e}")
-#             continue
+                if operation not in options:
+                    print("Invalid operation")
+                    continue
+                else:
+                    response = options[operation](argument)
+                    print("Response from server:", response)
+
+            except Exception as e:
+                print(f"Error: {e}")
+                continue

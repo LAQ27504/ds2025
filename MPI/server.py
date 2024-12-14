@@ -1,59 +1,53 @@
 from mpi4py import MPI
+import os
 
-info = MPI.Info.Create()
-service_name = "my_service_name"
-port = MPI.Open_port()
+def download(fileName):
 
-try:
-    print("Running server")
-    MPI.Publish_name(service_name=service_name, port_name=port, info=info)
-    print(f"Service '{service_name}' published at port '{port}'.")
+    if (os.path.exists(f"MPI/Server/{fileName}")):
+        with open(f"MPI/Server/{fileName}", 'rb') as f:
+            content = f.read()
+        return content    
+    else:
+        return False
 
-    #Wait for a connection from the client
-    server = MPI.COMM_WORLD.Accept(port)
-    print("Client connected.")
+def upload(arguments):
+    content, fileName = arguments
+    with open(f"MPI/Server/{fileName}", "wb") as f:
+        f.write(content)
+    return "Successfully"
 
-    # # Example communication (e.g., receive and send data)
-    # message = server.recv()
-    # print(f"Received from client: {message}")
-    # server.send("Hello from server!")
+def list(arguments):
+    fileList = os.listdir("MPI/Server")
+    return fileList
 
-    # # Disconnect from the client
-    # server.Disconnect()
-    # print("Client disconnected.")
-finally:
-    MPI.Unpublish_name(service_name=service_name, port_name=port, info=info)
-    MPI.Close_port(port)
-    print("Service unpublished and port closed.")
+def main():
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    print("Start the server")
+    if rank == 0:
+        options = {
+                "UPLOAD": upload,
+                "DOWNLOAD": download,
+                "LIST": list,
+            }
 
-# def download(fileName):
-#     if (os.path.exists(fileName)):
-#         with open(fileName, 'rb') as f:
-#             content = f.read()
-#         return content    
-#     else:
-#         return False
+        while True:
+            content = comm.recv(source=MPI.ANY_SOURCE)
+            operation = content.get("operation")
+            argument = content.get("argument")
+            rank = content.get("rank")
+            print(f"Receiving command from client {rank}: {operation}")
 
-# def upload(fileName : str, content : bytes):
-#     with open(fileName, "wb") as f:
-#         f.write(content.data)
-#     return "Successfully"
+            if operation == "QUIT":
+                print(f"Client {rank} log out.")
 
-# def list():
-#     fileList = os.listdir()
-#     return fileList
+            if operation not in options:
+                print("Invalid operation")
+                continue
+            else:
+                response = options[operation](argument)
+                print("Sending back")
+                comm.send(response, dest=rank)
 
-# def main():
-#     host = "192.168.127.103"
-#     port = 8080
-#     server = xmlrpc.server.SimpleXMLRPCServer((host, port), allow_none=True)
-#     print("Start the server")
-#     server.register_function(upload, "upload")
-#     server.register_function(list, "list")
-#     server.register_function(download, "download")
-#     server.serve_forever()
-
-#     return 
-
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()
