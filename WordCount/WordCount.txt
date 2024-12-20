@@ -1,0 +1,16 @@
+a : 1
+be : 2
+watch : 4
+which : 4
+swatch : 2
+switches : 1
+wished : 1
+wishes : 2
+witch : 4
+bitch : 2
+bitches : 2
+swiss : 5
+switch : 1
+switched : 2
+three : 2
+to : 3
