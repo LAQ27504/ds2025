@@ -43,24 +43,27 @@ def partition(mapping):
             re_map.append(data)
             continue
          running = False
-   shuffle()
+   shuffle_sort()
 
 def get_word(e):
    return e[0]
 
-def shuffle():
+def shuffle_sort():
    re_map.sort(key=get_word)
    print(re_map)
 
-def accumulate_counts(acc, item):
+def count_word(acc, item):
    word, count = item 
    acc[word] = acc.get(word, 0) + count
    return acc
 
 def reducer():
-   word_count = reduce(accumulate_counts, re_map, {})
+   word_count = reduce(count_word, re_map, {})
    print(word_count)
-   return word_count
+   with open("WordCount.txt", "a") as f:
+      for i in word_count:
+         text = f"{i} : {word_count[i]}\n"
+         f.write(text)
 
 def remove_symbol(text:str):
    symbol = ".?,!@#$%^&*()_+=[]"
@@ -73,12 +76,8 @@ with open("WordCount.txt", "w") as f:
    pass
 print(f"This is rank: {rank}")
 filePath = f"text{rank + 1}.txt"
-word_count = []
 with open(filePath, "r") as f:
    mapper(remove_symbol(f.read()))
-   word_count = reducer()
+   reducer()
 
-with open("WordCount.txt", "a") as f:
-   for i in word_count:
-      text = f"{i} : {word_count[i]}\n"
-      f.write(text)
+

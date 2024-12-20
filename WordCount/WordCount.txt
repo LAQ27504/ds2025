@@ -1,12 +1,12 @@
-a : 1
-be : 2
-watch : 4
-which : 4
 swatch : 2
 switches : 1
 wished : 1
 wishes : 2
 witch : 4
+a : 1
+be : 2
+watch : 4
+which : 4
 bitch : 2
 bitches : 2
 swiss : 5

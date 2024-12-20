@@ -1,0 +1,47 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{amsmath}
+
+\title{Practical Work 4: Word Count}
+\author{Le Anh Quang}
+\date{\today}
+
+\begin{document}
+	
+	\maketitle
+	
+	\section*{Introduction}
+	This report outlines the implementation of the Word Count task using a MapReduce approach in Python. The script deployed with the Message Passing Interface (MPI) for parallel computation. This implementation are following the step of the \href{https://static.googleusercontent.com/media/research.google.com/en//archive/mapreduce-osdi04.pdf}{MapReduce} paper by Google
+	
+	\section*{Reason of Implementation}
+	The implementation was chosen for some following reasons:
+	\begin{itemize}
+		\item Use of \texttt{mpi4py}: This library is used for simulate the 
+		worker in MapReduce. In this implementation, each M map task also be the R reduce task
+		\item Use of consistent hashing (\texttt{mmh3.hash}) for partitioning function: the pairs are partitioned into R regions
+		\item A straightforward design that clearly separates the mapper, partitioner, and reducer functionalities nearly from scratch.
+	\end{itemize}
+	
+	\section*{Implementation Details}
+	
+	\subsection*{Mapper}
+	The mapper reads chunks of data, split the text into words, and maps each word to the intermediate key-value pair $(word, 1)$. These pairs are sent to the appropriate processes for further handling.
+
+	
+	\subsection*{Partitioner}
+	Partitioner will handle partition the data from mappers to each reducers using formula 
+	\[
+	\text{hash(word)}\mod R
+	\] 
+	where \(\text{hash(word)}\) is the hash value of the word, and \(R\) is the number of partitions. In this case, MurmurHash is used because it is non-cryptographic hash and it generate the same hash for same word that process in parallel. Then the pair will be sent to the corresponding reducer
+	\subsection*{Shuffle and Sort}
+	In this part, the partitioned data will be shuffle then sort in the alphabet order for easier counting in the reduce step.
+		
+	\subsection*{Reducer}
+	The reducer will count all the duplicated word in the given data, then export the data in the output file
+	
+	\section*{Conclusion}
+	The Word Count implementation demonstrates the power of parallel processing with MapReduce. The design ensures modularity and efficient task distribution among processes.
+	
+\end{document}
